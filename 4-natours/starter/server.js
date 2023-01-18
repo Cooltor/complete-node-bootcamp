@@ -15,7 +15,7 @@ mongoose
     useCreateIndex: true,
     useFindAndModify: false,
   })
-  .then((con) => console.log('DB connection successfull 👌🏻'));
+  .then((con) => console.log('DB connection successfull 👌!'));
 
 console.log(app.get('env'));
 //console.log(process.env);
