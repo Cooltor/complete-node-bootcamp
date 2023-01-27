@@ -1,7 +1,7 @@
-const { json } = require('express');
 const Tour = require('../models/tourModel');
 const APIFeatures = require('../utils/apiFeatures');
 const catchAsync = require('../utils/catchAsync');
+const AppError = require('../utils/appError');
 
 exports.aliasTopTours = (req, res, next) => {
   req.query.limit = '5';
@@ -15,24 +15,29 @@ exports.getAllTours = catchAsync(async (req, res, next) => {
     .filter()
     .sort()
     .limitFields()
-    .paginate(); // on peut enchaîner les méthodes que parce que l'on return l'objet this à chaque fois
+    .paginate();
   const tours = await features.query;
 
   // SEND RESPONSE
   res.status(200).json({
-    status: 'succes',
+    status: 'success',
     results: tours.length,
     data: {
-      tours: tours,
+      tours,
     },
   });
 });
 
 exports.getTour = catchAsync(async (req, res, next) => {
   const tour = await Tour.findById(req.params.id);
-  // Tour.findOne({_id: req.params.id})   ==> méthode pour find 1 seul doc : équivalent a findById
+  // Tour.findOne({ _id: req.params.id })
+
+  if (!tour) {
+    return next(new AppError('No tour found with that ID', 404));
+  }
+
   res.status(200).json({
-    status: 'succes',
+    status: 'success',
     data: {
       tour,
     },
@@ -40,7 +45,7 @@ exports.getTour = catchAsync(async (req, res, next) => {
 });
 
 exports.createTour = catchAsync(async (req, res, next) => {
-  const newTour = await Tour.create(req.body); //voir pages
+  const newTour = await Tour.create(req.body);
 
   res.status(201).json({
     status: 'success',
@@ -51,23 +56,29 @@ exports.createTour = catchAsync(async (req, res, next) => {
 });
 
 exports.updateTour = catchAsync(async (req, res, next) => {
-  // voir docs et traduire
-  // patch méthod n'écrase pas entièrement l'ancien objet
-
   const tour = await Tour.findByIdAndUpdate(req.params.id, req.body, {
     new: true,
     runValidators: true,
   });
+
+  if (!tour) {
+    return next(new AppError('No tour found with that ID', 404));
+  }
+
   res.status(200).json({
     status: 'success',
     data: {
-      tour, //: tour,
+      tour,
     },
   });
 });
 
 exports.deleteTour = catchAsync(async (req, res, next) => {
-  await Tour.findByIdAndDelete(req.params.id);
+  const tour = await Tour.findByIdAndDelete(req.params.id);
+
+  if (!tour) {
+    return next(new AppError('No tour found with that ID', 404));
+  }
 
   res.status(204).json({
     status: 'success',
@@ -75,7 +86,6 @@ exports.deleteTour = catchAsync(async (req, res, next) => {
   });
 });
 
-// PIPELINE
 exports.getTourStats = catchAsync(async (req, res, next) => {
   const stats = await Tour.aggregate([
     {
@@ -84,7 +94,6 @@ exports.getTourStats = catchAsync(async (req, res, next) => {
     {
       $group: {
         _id: { $toUpper: '$difficulty' },
-        //_id: '$ratingsAverage',
         numTours: { $sum: 1 },
         numRatings: { $sum: '$ratingsQuantity' },
         avgRating: { $avg: '$ratingsAverage' },
@@ -94,11 +103,8 @@ exports.getTourStats = catchAsync(async (req, res, next) => {
       },
     },
     {
-      $sort: { avgPrice: 1 }, //tri par ordre croissant de avgPrice
+      $sort: { avgPrice: 1 },
     },
-    //{
-    // $match: { _id: { $ne: 'EASY' } }, // retire les easy
-    //},
   ]);
 
   res.status(200).json({
@@ -110,7 +116,7 @@ exports.getTourStats = catchAsync(async (req, res, next) => {
 });
 
 exports.getMonthlyPlan = catchAsync(async (req, res, next) => {
-  const year = req.params.year * 1; //2021
+  const year = req.params.year * 1; // 2021
 
   const plan = await Tour.aggregate([
     {
@@ -143,7 +149,7 @@ exports.getMonthlyPlan = catchAsync(async (req, res, next) => {
       $sort: { numTourStarts: -1 },
     },
     {
-      $limit: 12, // nbre de plan max
+      $limit: 12,
     },
   ]);
 
