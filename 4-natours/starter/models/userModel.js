@@ -8,6 +8,12 @@ const userSchema = new mongoose.Schema({
     required: [true, 'Please tell us your name'],
     trim: true,
   },
+  firstname: {
+    type: String,
+    //required: [true, 'Please tell us your name'],
+    trim: true,
+  },
+  passwordChangedAt: Date,
 
   email: {
     type: String,
@@ -55,6 +61,20 @@ userSchema.methods.correctPassword = async function (
   userPassword
 ) {
   return await bcrypt.compare(candidatePassword, userPassword);
+};
+
+userSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
+  if (this.passwordChangedAt) {
+    const changedTimestamp = parseInt(
+      this.passwordChangedAt.getTime() / 1000,
+      10
+    );
+
+    return JWTTimestamp < changedTimestamp;
+  }
+
+  // False means NOT change
+  return false;
 };
 
 const User = mongoose.model('User', userSchema);
