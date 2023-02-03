@@ -2,6 +2,7 @@ const Tour = require('../models/tourModel');
 const APIFeatures = require('../utils/apiFeatures');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
+const { populate } = require('../models/tourModel');
 
 exports.aliasTopTours = (req, res, next) => {
   req.query.limit = '5';
@@ -29,7 +30,8 @@ exports.getAllTours = catchAsync(async (req, res, next) => {
 });
 
 exports.getTour = catchAsync(async (req, res, next) => {
-  const tour = await Tour.findById(req.params.id);
+  const tour = await Tour.findById(req.params.id).populate('reviews'); // 'reviews' est le nom de la virtual populate dans tourModel.js
+
   // Tour.findOne({ _id: req.params.id })
 
   if (!tour) {
