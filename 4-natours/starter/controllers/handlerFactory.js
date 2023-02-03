@@ -1,5 +1,29 @@
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
+const APIFeatures = require('../utils/apiFeatures');
+
+exports.getAll = (Model) =>
+  catchAsync(async (req, res, next) => {
+    // To allow for nested GET review on tour (little hack)
+    let filter = {};
+    if (req.params.tourId) filter = { tour: req.params.tourId };
+
+    const features = new APIFeatures(Model.find(), req.query)
+      .filter()
+      .sort()
+      .limitFields()
+      .paginate();
+    const docs = await features.query;
+
+    // SEND RESPONSE
+    res.status(200).json({
+      status: 'success',
+      results: docs.length,
+      data: {
+        docs,
+      },
+    });
+  });
 
 exports.deleteOne = (Model) =>
   catchAsync(async (req, res, next) => {
@@ -42,6 +66,26 @@ exports.createOne = (Model) =>
       status: 'success',
       data: {
         data: doc,
+      },
+    });
+  });
+
+exports.getOne = (Model, popOptions) =>
+  catchAsync(async (req, res, next) => {
+    let query = Model.findById(req.params.id);
+    if (popOptions) query = query.populate(popOptions);
+    const doc = await query; // 'reviews' est le nom de la virtual populate dans tourModel.js
+
+    // Tour.findOne({ _id: req.params.id })
+
+    if (!doc) {
+      return next(new AppError('No tour found with that ID', 404));
+    }
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        doc,
       },
     });
   });
