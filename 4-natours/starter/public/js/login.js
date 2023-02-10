@@ -32,6 +32,6 @@ export const logout = async () => {
     });
     if (res.data.status === 'success') location.reload(true);
   } catch (err) {
-    showAlert('error', 'Erreur de deconnexion, essayez encore.');
+    showAlert('error', 'Error logging out! Try again.');
   }
 };
